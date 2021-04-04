@@ -1,0 +1,16 @@
+{
+    "spellright.language": [
+        "en"
+    ],
+    "spellright.documentTypes": [
+        "markdown",
+        "latex",
+        "plaintext",
+        "systemverilog"
+    ],
+    "spellright.parserByClass": {
+        "systemverilog": {
+            "parser": "code"
+        }
+    }
+}

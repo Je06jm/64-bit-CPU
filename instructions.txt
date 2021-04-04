@@ -1,0 +1,64 @@
+NOP
+HALT
+
+LOADMSR (Uses ARG0 as index, ARG1 as offset. Stores data in R2 and R3)
+STOREMSR (Uses ARG0 as index, ARG1 as offset. Loads data from R2 and R3)
+
+SYSCALL
+SYSRET
+
+INT (Uses ARG0 as index)
+INTRET
+
+MOV (Uses ARG0 as index and ARG1 index)
+SET (Uses ARG0 as index and ARG1 value)
+
+ADD (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+SUB (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+MUL (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+DIV (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+
+AND (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+OR (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+XOR (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+NOT (Uses ARG0 as source, ARG1 as destination)
+SHIFTR (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+SHIFTL (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+SHIFTRC (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+SHIFTLC (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+
+AADD (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+ASUB (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+AMUL (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+ADIV (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+
+AAND (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+AOR (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+AXOR (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+ANOT (Uses ARG0 as source, ARG1 as destination)
+ASHIFTR (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+ASHIFTL (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+ASHIFTRC (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+ASHIFTLC (Uses ARG0 as source, ARG1 as source, and ARG2 as destination)
+
+CMP (Uses ARG0 as source, ARG1 as source)
+
+JMP (Uses ARG0 as destination)
+BRA (Uses ARG0 as flags, and ARG1 as destination)
+RET
+
+PUSH (Uses ARG0 as source)
+POP (Uses ARG0 as destination)
+
+LOAD (Uses ARG0*ARG1+ARG2 as source, ARG3 as destination)
+STORE (Uses ARG0 as source, ARG1*ARG2+ARG3 as destination)
+
+ALOAD (Uses ARG0*ARG1+ARG2 as source, ARG3 as destination)
+ASTORE (Uses ARG0 as source, ARG1*ARG2+ARG3 as destination)
+
+TBIT (Uses ARG0 as source, ARG1 as index)
+SBIT (Uses ARG0 as source, ARG1 as index)
+CBIT (Uses ARG0 as source, ARG1 as index)
+
+OUT (Uses ARG0 as source, ARG1 as destination)
+IN (Uses ARG0 as source, ARG1 as destination)
