@@ -38,95 +38,131 @@ typedef enum logic[7:0] {
 
     DIVIDE_BY_ZERO,
     INVALID_ADDRESS,
+    INVALID_OPCODE,
 
     DOUBLE_FAULT,
     TRIPLE_FAULT, // Resets the CPU
+
+    INVALID_FLOAT_SIZE,
 
     TIMER
 } exception;
 
 typedef enum logic[7:0] {
-    NOP,
-    HALT,
+    NOP =       'h00,
+    HALT =      'h01,
 
-    LOADMSR,
-    STOREMSR,
+    LOADMCR =   'h02,
+    STOREMCR =  'h03,
 
-    SYSCALL,
-    SYSRET,
-    INT,
-    INTRET,
+    SYSCALL =   'h04,
+    SYSRET =    'h05,
+    INT =       'h06,
+    INTRET =    'h07,
 
-    MOV,
-    SET,
+    ADD =       'h10,
+    SUB =       'h11,
+    MUL =       'h12,
+    DIV =       'h13,
+    MOD =       'h14,
 
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-    MOD,
+    SADD =      'h18,
+    SSUB =      'h19,
+    SMUL =      'h1a,
+    SDIV =      'h1b,
+    SMOD =      'h1c,
 
-    // TODO: Add signed instructions
+    // Does not support byte floats!
+    FADD =      'h20,
+    FSUB =      'h21,
+    FMUL =      'h22,
+    FDIV =      'h23,
+    FMOD =      'h24,
 
-    AND,
-    OR,
-    XOR,
-    NOT,
-    SHIFTR,
-    SHIFTL,
-    SHIFTRC,
-    SHIFTLC,
+    SET =       'h30,
+    ESET =      'h31,
+    ZSET =      'h32,
 
-    AADD, // TODO: Remove atomic instructions
-    ASUB,
-    AMUL,
-    ADIV,
+    INC =       'h33,
+    DEC =       'h34,
+    AND =       'h35,
+    OR =        'h36,
+    XOR =       'h37,
+    NOT =       'h38,
+    ROLR =      'h39,
+    ROLL =      'h3a,
+    SHIFTRC =   'h3b,
+    SHIFTLC =   'h3c,
+    SWAP =      'h3d,
+    FLIP =      'h3e,
+    MOVE =      'h3f,
 
-    AAND,
-    AOR,
-    AXOR,
-    ANOT,
-    AMOD,
-    ASHIFTR,
-    ASHIFTL,
-    ASHIFTRC,
-    ASHIFTLC,
+    CMP =       'h40,
+    FCMP =      'h41,
 
-    CMP,
+    JMP =       'h42,
+    BRA =       'h43,
+    IJMP =      'h44,
+    IBRA =      'h45,
+    AJMP =      'h46,
+    ABRA =      'h47,
+    JMPI =      'h48,
+    BRAI =      'h49,
+    IJMPI =     'h4a,
+    IBRAI =     'h4b,
+    AJMPI =     'h4c,
+    ABRAI =     'h4d,
+    RET =       'h4e,
 
-    JMP,
-    BRA,
-    RET,
+    LOAD =      'h50,
+    STORE =     'h51,
 
-    PUSH,
-    POP,
+    ILOAD =     'h52,
+    ISTORE =    'h53,
 
-    LOAD,
-    STORE,
+    ASTOREIF =  'h54,
 
-    ALOAD,
-    ASTORE, // TODO: Add atomic store if equals instruction
+    SISTOREIF = 'h55,
 
-    TBIT,
-    SBIT,
-    CBIT,
+    LOADI =     'h56,
+    STOREI =    'h57,
 
-    OUT,
-    IN
+    ILOADI =    'h56,
+    ISTOREI =   'h57,
+
+    STOREIFI =  'h58,
+
+    ISTOREIFI = 'h59,
+
+    CAFI =      'h5a,
+
+    PUSH =      'h60,
+    POP =       'h61,
+
+    TBIT =      'h62,
+    SBIT =      'h63,
+    CBIT =      'h64,
+    EBIT =      'h65,
+
+    OUT =       'h66,
+    IN =        'h67,
+
+    SETC =      'h68,
+    CLEARC =    'h69,
+
+    SETZ =      'h6a,
+    CLEARZ =    'h6b,
+
+    SETN =      'h6c,
+    CLEARN =    'h6d
 } opcode_t;
 
-typedef enum logic[2:0] {
+typedef enum logic[1:0] {
     BYTES_1 =   'h0,
     BYTES_2 =   'h1,
     BYTES_4 =   'h2,
     BYTES_8 =   'h3
-} instructionSize_t;
-
-typedef logic[6:0] instructionFlags_t;
-`define INSTRUCTION_OP0_USE_IMMIDIATE (1<<0)
-`define INSTRUCTION_OP1_USE_IMMIDIATE (1<<1)
-`define INSTRUCTION_OP2_USE_IMMIDIATE (1<<2)
-`define INSTRUCTION_OP3_USE_IMMIDIATE (1<<3)
+} instructionDataSize_t;
 
 typedef ushort_t branchFlags_t;
 `define BRANCH_ZERO (1<<0)
@@ -173,12 +209,72 @@ typedef enum logic[7:0] {
     R13 =   'h0d,
     R14 =   'h0e,
     R15 =   'h0f,
+    R16 =   'h10,
+    R17 =   'h11,
+    R18 =   'h12,
+    R19 =   'h13,
+    R20 =   'h14,
+    R21 =   'h15,
+    R22 =   'h16,
+    R23 =   'h17,
+    R24 =   'h18,
+    R25 =   'h19,
+    R26 =   'h1a,
+    R27 =   'h1b,
+    R28 =   'h1c,
+    R29 =   'h1d,
+    R30 =   'h1e,
+    R31 =   'h1f,
+    R32 =   'h20,
+    R33 =   'h21,
+    R34 =   'h22,
+    R35 =   'h23,
+    R36 =   'h24,
+    R37 =   'h25,
+    R38 =   'h26,
+    R39 =   'h27,
+    R40 =   'h28,
+    R41 =   'h29,
+    R42 =   'h2a,
+    R43 =   'h2b,
+    R44 =   'h2c,
+    R45 =   'h2d,
+    R46 =   'h2e,
+    R47 =   'h2f,
+    R48 =   'h30,
+    R49 =   'h31,
+    R50 =   'h32,
+    R51 =   'h33,
+    R52 =   'h34,
+    R53 =   'h35,
+    R54 =   'h36,
+    R55 =   'h37,
+    R56 =   'h38,
+    R57 =   'h39,
+    R58 =   'h3a,
+    R59 =   'h3b,
+    R60 =   'h3c,
+    R61 =   'h3d,
+    R62 =   'h3e,
+    R63 =   'h3f,
 
-    IC =    'hfc,
+    BASE0 = 'hf9,
+    BASE1 = 'hfa,
+    INDEX0 ='hfb,
+    INDEX1 ='hfc,
+    
     SP =    'hfd,
     BP =    'hfe,
-    FLAGS = 'hff
+    IC =    'hff
 } register_t;
+
+typedef struct packed {
+    opcode_t opcode;
+} instructionOps0_t;
+
+typedef struct packed {
+    
+} instructionOps1_t;
 
 endpackage
 

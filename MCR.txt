@@ -1,0 +1,49 @@
+0x00: (Control register)
+    0x00: (Control config; R/W)
+        0 : Running             # 1
+        1 : User-Mode           # 0
+        2 : SysCall Enable      # 0
+        3 : Exception Enable    # 0
+        4 : Interupt Enable     # 0
+        5 : MMU Enable          # 0
+
+    0x01: (Control status; Read-Only)
+        0 : In SysCall
+        1 : In Exception
+        2 : In Interupt
+
+    0x02: (Clock speed; Read-Only)
+        0-63 : Clock Speed in Htz
+    
+    0x03: (Timer counter; R/W)
+        0-63 : Timer Value      # 0
+    
+    0x04: (Exception pointer; R/W)
+        0-63 : Exception Handler    # 0
+    
+    0x05: (Interupt pointer; R/W)
+        0-63 : Interupt Handler     # 0
+    
+    0x06: (Page table pointer; R/W)
+        0-63 : Page Table   # 0
+    
+    0x07: (Exception/Interupt number; Read-Only)
+        0-63 : Exception/Interupt number    # 0
+    
+    0x08: (CPU Info; Read-Only)
+        0-7 : Architecture version
+        8-63 : Zero
+
+    0x09: (Manufacure ID; Read-Only)
+        0-63 : Manufacure ID
+    
+    0x0a: (Serial number; Read-Only)
+        0-63 : Serial number
+        
+0x01 (Features)
+    0x00 (Available features; Read-Only)
+        0-63 : Zero
+    
+    0x01 (Enabled features; R/W)
+        0-63 : Zero
+    
