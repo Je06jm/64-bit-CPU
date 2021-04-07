@@ -13,9 +13,21 @@ module denormalize(
         fltOut <= 64'b0;
 
         case (fltInt.type)
-            HALF: fltOut <= {{1'b1, fltIn.value.half.fraction, 53'b0}, fltIn};
-            SINGLE: fltOut <= {{1'b1, fltIn.value.single.fraction, 41'b0}, fltIn};
-            DOUBLE: fltOut <= {{1'b1, fltIn.value.double.fraction, 11'b0}, fltIn};
+            HALF: fltOut <= {
+                flt.sign,
+                {11'b0, flt.exponent},
+                {1'b0, 1'b1, fltIn.value.half.fraction, 52'b0}
+            };
+            SINGLE: fltOut <= {
+                flt.sign,
+                {8'b0, flt.exponent},
+                {1'b0, 1'b1, fltIn.value.single.fraction, 40'b0}
+            };
+            DOUBLE: fltOut <= {
+                flt.sign,
+                {5'b0, flt.exponent}
+                {1'b0, 1'b1, fltIn.value.double.fraction, 10'b0}
+            };
         endcase
     end
 

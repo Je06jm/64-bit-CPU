@@ -8,9 +8,16 @@ import types::*;
 package floats
 
 typedef struct packed {
+    logic sign;
+    ushort_t exponent;
     ulong_t number;
-    float_t float;
 } denormalized_t;
+
+typedef struct packed {
+    logic sign;
+    ushort_t exponent;
+    logic[127:0] number;
+} denormalizedExt_t;
 
 endpackage
 

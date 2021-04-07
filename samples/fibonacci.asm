@@ -2,48 +2,68 @@ section .text
 
 global _start
 _start:
+    ; The number of numbers to calculate
+    move        512, R0
+    ; Where to store them
+    move        data, R1
+
     bra         fib
-    halt
+    ret
 
 fib:
-    ; Setup variables
-    zset        byte 1, R0 ; A
-    zset        byte 1, R1 ; B
+    ; See if R0 is zero
+    or          R0, R0, ZERO
+    ; Return if it is zero
+    ret         z
 
-    ; Address to store
-    zset        byte data, R3
+    ; Move data around
+    move        R0, R3
+    move        R1, R4
 
-    ; Numbers calculated
-    zset        byte 2, R4
-    ; Maximum numbers to calculate
-    zset        short 512, R5
-    
-    ; Next number offset
-    zset        byte 8, R6
+    ; Intial values
+    move        1, R0
+    move        1, R1
 
-    ; Pre-store 1, 1
-    store       quad R0, R3
-    add         R3, R6, R3
-    store       quad R1, R3
-    add         R3, R6, R3
+    ; Zero out a register to use
+    ; for our indexing
+    xor         R5, R5
+
+    ; Store the first few numbers
+    ; manualy
+    store       R0, [R4+R5*8]
+    inc         R5
+
+    ; Test number requested
+    dec         R3
+    ret         z
+
+    ; More number storing
+    store       R0, [R4+R5*8]
+    inc         R5
+
+    ; Do one last manuel check on the
+    ; number of requested numbers
+    dec         R3
+    ret         z
 
 .loop:
-    ; Have we reached our limit?
-    cmp         R4, R5
-    ret         nl ; Could also do ret  g,e
-    
-    ; Calculate next number
+    ; Calculate the next number in the
+    ; sequence
     add         R0, R1, R2
-    inc         R4, R4
-
     move        R1, R0
     move        R2, R1
 
-    ; Store and repeat
+    ; Store it in the requested buffer
+    store       R2, [R4+R5*8]
+    inc         R5
 
-    store       R2, R3
-    add         R3, R6, R3
+    ; See if we have generated the requested
+    ; number of numbers
+    dec         R3
+    ; Return if so
+    ret         z
 
+    ; Do this all over again
     jmp         .loop
 
 section .bss
