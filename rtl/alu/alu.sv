@@ -1,43 +1,50 @@
-`include "rtl/defines.svh"
+`include "types.svh"
+`include "instructions.svh"
+`include "exceptions.svh"
 
-import defines::*;
+import types::*;
+import instructions::*;
+import exceptions::*;
 
-module alu(
-    input opcode_t op,
-    input logic in_carry,
-    input quad_t in_a, in_b,
-    output quad_t result,
-    output logic out_carry, out_zero, out_negitive,
-    output logic cpu_exception
+module ALU(
+    input instruction_t instr,
+    input logic i_carry,
+    output long_t result,
+    output logic z, n, c, sn
 );
 
-    bquad_t arith_result;
+    long_t arithResult;
+    logic arithCarry;
 
     arithmetic arith(
-        op,
-        in_a, in_b,
-        arith_result
+        instr,
+        arithResult,
+        arithCarry
     );
 
-    bquad_t bit_result;
+    long_t bitwResult;
+    logic bitwCarry;
 
-    bitwise bits(
-        op,
-        in_carry,
-        in_a, in_b,
-        bit_result
+    bitwise bitw(
+        instr,
+        i_carry,
+        bitwResult,
+        bitwCarry
     );
 
-    bquad_t temp_result = arith_result | bit_result;
+    logic compN, compZ, compSN;
 
-    assign out_carry = temp_result[64];
-    assign out_zero = temp_result[63:0] == 0;
-    assign out_negitive = temp_result[63];
+    compare comp(
+        instr,
+        compN, compZ, compSN
+    );
 
-    assign div_0 = (op == DIV || op == ADIV || op == MOD || op == AMOD) && (in_b == 0);
-
-    assign cpu_exception = div_0 ? DIVIDE_BY_ZERO : NONE;
-
-    assign result = div_0 ? 64'b0 : temp_result[63:0];
+    always @* begin
+        result <= arithResult | bitwResult;
+        z <= compZ;
+        n <= compN;
+        c <= arithCarry | bitwCarry;
+        sn <= compSN;
+    end
 
 endmodule
