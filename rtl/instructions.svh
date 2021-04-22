@@ -1,12 +1,12 @@
 `ifndef CPU_INSTRUCTIONS
 `define CPU_INSTRUCTIONS
 
-`include "types.svh"
-import types::*
+`include "rtl/types.svh"
+import types::*;
 
 package instructions;
 
-typedef enum logic[6:0] {
+typedef enum logic[15:0] {
 
     NOP,
     HALT,
@@ -82,37 +82,18 @@ typedef enum logic[6:0] {
     SETF,
     CLEARF
 
-} opcodeByte_t
-
-typedef enum logic[14:0] {
-
-} opcodeWord_t;
-
-typedef union packed {
-    logic usesWord;
-    opcodeByte_t byte;
-    opcodeWord_t word;
 } opcode_t;
 
-typedef union packed {
-    byte_t byte;
-    ubyte_t ubyte;
-    short_t short;
-    ushort_t ushort;
-    int_t int;
-    uint_t uint;
-    long_t long;
-    ulong_t ulong;
-} argument_t;
-
 typedef enum logic[3:0] {
-    BYTES_8 =   'h0,
-    BYTES_16 =  'h1,
-    BYTES_32 =  'h2,
-    BYTES_64 =  'h3
+    BITS_8 =   'h0,
+    BITS_16 =  'h1,
+    BITS_32 =  'h2,
+    BITS_64 =  'h3
 } sizeFlags_t;
 
 typedef logic[7:0] flags_t;
+
+`define NO_FLAGS 0
 
 `define USE_ARG0_AS_IMMIDIATE (1<<0)
 `define USE_ARG1_AS_IMMIDIATE (1<<1)
@@ -164,7 +145,7 @@ typedef struct packed {
     opcode_t opcode;
     sizeFlags_t argSize0, argSize1, argSize2, argSize3;
     flags_t flags;
-    argument_t arg0, arg1, arg2, arg3;
+    ulong_t arg0, arg1, arg2, arg3;
 } instruction_t;
 
 endpackage

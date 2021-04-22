@@ -1,0 +1,19 @@
+VCD info: dumpfile tests/alu/testbench.vcd opened for output.
+VCD warning: $dumpvars: Package ($unit) is not dumpable with VCD.
+VCD warning: $dumpvars: Package (exceptions) is not dumpable with VCD.
+VCD warning: $dumpvars: Package (instructions) is not dumpable with VCD.
+VCD warning: $dumpvars: Package (types) is not dumpable with VCD.
+Passed (tests/alu/testbench.sv, 45 [1]): NOP
+Passed (tests/alu/testbench.sv, 53 [3]): (Result) ADD 8.8
+Passed (tests/alu/testbench.sv, 54 [3]): (Zero) ADD 8.8
+Passed (tests/alu/testbench.sv, 55 [3]): (Carry) ADD 8.8
+Passed (tests/alu/testbench.sv, 56 [3]): (Signed Carry) ADD 8.8
+Passed (tests/alu/testbench.sv, 62 [5]): (Result) SUB 8.8
+Passed (tests/alu/testbench.sv, 63 [5]): (Zero) SUB 8.8
+Passed (tests/alu/testbench.sv, 64 [5]): (Carry) SUB 8.8
+Passed (tests/alu/testbench.sv, 65 [5]): (Signed Carry) SUB 8.8
+Passed (tests/alu/testbench.sv, 72 [7]): (Result) MUL 8.8
+Passed (tests/alu/testbench.sv, 73 [7]): (Zero) MUL 8.8
+Passed (tests/alu/testbench.sv, 74 [7]): (Carry) MUL 8.8
+Passed (tests/alu/testbench.sv, 75 [7]): (Signed Carry) MUL 8.8
+tests/alu/testbench.sv:78: $finish called at 8 (1s)

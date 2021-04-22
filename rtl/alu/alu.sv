@@ -1,6 +1,6 @@
-`include "types.svh"
-`include "instructions.svh"
-`include "exceptions.svh"
+`include "rtl/types.svh"
+`include "rtl/instructions.svh"
+`include "rtl/exceptions.svh"
 
 import types::*;
 import instructions::*;

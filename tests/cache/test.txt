@@ -1,0 +1,5 @@
+testbench : testbench_L1.sv
+testbench : testbench_L2.sv
+
+required : rtl/cache/L1.sv
+required : rtl/cache/L2.sv

@@ -1,3 +1,10 @@
-`include "rtl/defines.svh"
+`include "rtl/types.svh"
+`include "rtl/requests.svh"
 
-import defines::*;
+module Ld1 #(
+    parameter sizeKB = 16
+) (
+    
+);
+    
+endmodule

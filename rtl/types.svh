@@ -37,14 +37,14 @@ typedef enum logic[1:0] {
     DOUBLE
 } floatType_t;
 
-typedef union {
+typedef union packed {
     half_t half;
     single_t single;
     double_t double;
 } floatValue_t;
 
 typedef struct packed {
-    floatType_t type;
+    floatType_t ftype;
     floatValue_t value;
 } float_t;
 

@@ -15,18 +15,7 @@ typedef logic unsigned[31:0] uint_t;
 typedef logic unsigned[63:0] uquad_t;
 typedef logic unsigned[64:0] buquad_t;
 
-typedef struct packed {
-    uquad_t addr;
-    uquad_t data;
-    logic isWrite;
-    logic isPrivaliged;
-    logic isValid;
-} cpuMemRequest_t;
 
-typedef struct packed {
-    uquad_t data;
-    logic isValid;
-} cpuMemResult_t;
 
 // TODO: Turn this into a flag array???
 typedef enum logic[7:0] {
@@ -272,9 +261,6 @@ typedef struct packed {
     opcode_t opcode;
 } instructionOps0_t;
 
-typedef struct packed {
-    
-} instructionOps1_t;
 
 endpackage
 

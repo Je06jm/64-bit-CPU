@@ -1,11 +1,23 @@
-from subprocess import run
+from subprocess import run, DEVNULL
 
 file = open("tests/list.txt", "r")
 tests = file.readlines()
 file.close()
 
+def doCommand(cmd):
+    #for item in cmd:
+    #    print(item, end=" ")
+    #print()
+
+    run(cmd, stdout=DEVNULL)
+
+failed = []
+passed = 0
 for test in tests:
     test = test.strip()
+
+    if test.startswith("#"):
+        continue
 
     if len(test) == 0:
         continue
@@ -26,6 +38,9 @@ for test in tests:
 
     for command in commands:
         command = command.strip()
+
+        if command.startswith("#"):
+            continue
 
         if len(command) == 0:
             continue
@@ -50,19 +65,45 @@ for test in tests:
         continue
 
     for testbench in testbenches:
-        output = testbench[:-3] + ".out"
+        name = testbench[:-3]
+        path = "tests/" + test + "/"
+
+        print("Running testbench: " + path + name + ".sv")
 
         cmd = [
             "iverilog",
             "-g2012",
+            "-D",
+            "DUMP_FILE=\"" + path + name + ".vcd\"",
+            "-D",
+            "PATH=\"" + path + "\"",
             "-o",
-            "tests/" + test + "/" + output,
-            "tests/" + test + "/" + testbench
+            path + name + ".out",
+            path + testbench
         ] + required
 
-        for item in cmd:
-            print(item, end=" ")
-        print()
+        doCommand(cmd)
 
-        run(cmd)
+        cmd = [
+            "vvp",
+            "-l",
+            path + name + ".log",
+            path + name + ".out"
+        ]
 
+        doCommand(cmd)
+
+        file = open(path + name + ".log", "r")
+        lines = file.readlines()
+        file.close()
+
+        for line in lines:
+            if line.startswith("Failed "):
+                failed += [line.strip()]
+            
+            elif line.startswith("Passed "):
+                passed += 1
+
+print("Passed " + str(passed) + " test, Failed " + str(len(failed)) + " tests")
+for test in failed:
+    print("\t" + test)

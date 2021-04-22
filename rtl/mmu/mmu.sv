@@ -1,6 +1,10 @@
-`include "rtl/defines.svh"
+`include "rtl/types.svh"
+`include "rtl/requests.svh"
+`include "rtl/exceptions.svh"
 
-import defines::*;
+import types::*;
+import requests::*;
+import exceptions::*;
 
 `define PAGE_FLAG_PRESENT   12'b000000000001
 `define PAGE_FLAG_SIZE      12'b000000000010
@@ -20,7 +24,7 @@ import defines::*;
 typedef logic[1:0] PageSize;
 
 typedef struct packed {
-    uquad_t virtualAddr, physicalAddr;
+    ulong_t virtualAddr, physicalAddr;
     PageSize size;
     logic isPrivaliged;
     logic canWrite;
@@ -40,11 +44,11 @@ module MMU #(
     input logic clock, reset,
 
     input logic enabled,
-    input uquad_t pageTableAddr,
+    input ulong_t pageTableAddr,
 
     input cpuMemRequest_t cpu_request,
     output cpuMemResult_t cpu_result,
-    output exception cpu_exception,
+    output exception_t cpu_exception,
 
     output cpuMemRequest_t mem_request,
     input cpuMemResult_t mem_result
@@ -60,7 +64,7 @@ module MMU #(
 
     always @(posedge reset) begin
         for (i = 0; i < TLBEntries; i = i + 1) begin
-            buffer[i] <= {64'h0, 64'h0, 1'b0};
+            buffer[i] <= {64'h0, 64'h0, 1'b0, 1'b0, 1'b0};
         end
 
         counter <= 0;
@@ -76,256 +80,304 @@ module MMU #(
         mem_request.isValid <= 0;
 
         passResult <= 0;
+        foundEntry <= 0;
     end
-
-    // TLB cached lookup (IDLE)
-
-    logic foundEntry;
+    
+    ulong_t GBAddr;
+    ulong_t MBAddr;
+    ulong_t KBAddr;
 
     // TODO: Double check these values!
-    uquad_t GBAddr = {cpu_request.addr[63:`KB_SIZE+`MB_SIZE+`GB_SIZE], {(`KB_SIZE+`MB_SIZE+`GB_SIZE){1'b0}}};
-    uquad_t MBAddr = {cpu_request.addr[63:`KB_SIZE+`MB_SIZE], {(`KB_SIZE+`MB_SIZE){1'b0}}};
-    uquad_t KBAddr = {cpu_request.addr[63:`KB_SIZE], {`KB_SIZE{1'b0}}};
+    always @* begin
+        GBAddr <= {cpu_request.addr[63:`KB_SIZE+`MB_SIZE+`GB_SIZE], {(`KB_SIZE+`MB_SIZE+`GB_SIZE){1'b0}}};
+        MBAddr <= {cpu_request.addr[63:`KB_SIZE+`MB_SIZE], {(`KB_SIZE+`MB_SIZE){1'b0}}};
+        KBAddr <= {cpu_request.addr[63:`KB_SIZE], {`KB_SIZE{1'b0}}};
+    end
 
-    uquad_t GBOffset = {{(64-`KB_SIZE-`MB_SIZE-`GB_SIZE){1'b0}}, cpu_request.addr[`KB_SIZE+`MB_SIZE+`GB_SIZE:0]};
-    uquad_t MBOffset = {{(64-`KB_SIZE-`MB_SIZE){1'b0}}, cpu_request.addr[`KB_SIZE+`MB_SIZE:0]};
-    uquad_t KBOffset = {{(64-`KB_SIZE){1'b0}}, cpu_request.addr[`KB_SIZE:0]};
+    ulong_t GBOffset;
+    ulong_t MBOffset;
+    ulong_t KBOffset;
+
+    // TODO: Double check these values!
+    always @* begin
+        GBOffset <= {{(64-`KB_SIZE-`MB_SIZE-`GB_SIZE){1'b0}}, cpu_request.addr[`KB_SIZE+`MB_SIZE+`GB_SIZE-1:0]};
+        MBOffset <= {{(64-`KB_SIZE-`MB_SIZE){1'b0}}, cpu_request.addr[`KB_SIZE+`MB_SIZE-1:0]};
+        KBOffset <= {{(64-`KB_SIZE){1'b0}}, cpu_request.addr[`KB_SIZE-1:0]};
+    end
+
+    logic unsigned[8:0] TB1Entry;
+    logic unsigned[8:0] TB0Entry;
+
+    // TODO: Double check these values!
+    always @* begin
+        TB1Entry <= GBAddr >> (`KB_SIZE+`MB_SIZE+`GB_SIZE);
+        TB0Entry <= MBAddr >> (`KB_SIZE+`MB_SIZE);
+    end
 
     logic passResult;
 
+    // Pass through memory
+    always @* begin
+        if (!enabled) begin
+            cpu_exception <= NONE;
+
+            mem_request <= cpu_request;
+            passResult <= 1;
+            stage <= IDLE;
+        end
+
+        if (passResult)
+            cpu_result <= mem_result;
+        else
+            cpu_result <= {64'b0, 1'b0};
+    end
+
+    // Don't pass if cpu_exception is not NONE
+    always @* begin
+        if (cpu_exception != NONE)
+            cpu_result <= {64'b0, 1'b0};
+    end
+
+    logic foundEntry;
+
+    // IDLE
     always @(posedge clock) begin
         foundEntry = 0;
-        if (cpu_request.isValid && enabled) begin
+
+        if (
+            enabled &&
+            cpu_request.isValid &&
+            (stage == IDLE)
+        ) begin
             cpu_exception = NONE;
 
-            if (stage == IDLE) begin
-                for (i = 0; i < TLBEntries; i = i + 1) begin
+            for (i = 0; i < TLBEntries; i = i + 1) begin
+                // GB entry lookup
+                if (
+                    (buffer[i].virtualAddr == GBAddr) &&
+                    (buffer[i].size == `GB) &&
+                    buffer[i].isValid
+                ) begin
+                    foundEntry = 1;
+                    
+                    if (buffer[i].isPrivaliged && !cpu_request.isPrivaliged)
+                        cpu_exception <= PAGE_PRIVALIGED_ACCESS;
+
+                    else if (!buffer[i].canWrite && cpu_request.isWrite)
+                        cpu_exception <= PAGE_READ_ONLY;
+                    
+                    else begin
+                        mem_request <= {
+                            buffer[i].physicalAddr | GBOffset,
+                            cpu_request.data,
+                            cpu_request.isWrite,
+                            1'b0,
+                            1'b1
+                        };
+
+                        passResult <= 1;
+                    end
+
+                // MB entry lookup
+                end else if (
+                    (buffer[i].virtualAddr == MBAddr) &&
+                    (buffer[i].size == `MB) &&
+                    buffer[i].isValid
+                ) begin
+                    foundEntry = 1;
+
+                    if (buffer[i].isPrivaliged && !cpu_request.isPrivaliged)
+                        cpu_exception <= PAGE_PRIVALIGED_ACCESS;
+
+                    else if (!buffer[i].canWrite && cpu_request.isWrite)
+                        cpu_exception <= PAGE_READ_ONLY;
+                    
+                    else begin
+                        mem_request <= {
+                            buffer[i].physicalAddr | MBOffset,
+                            cpu_request.data,
+                            cpu_request.isWrite,
+                            1'b0,
+                            1'b1
+                        };
+
+                        passResult <= 1;
+                    end
                 
-                    if (GBAddr == buffer[i].virtualAddr && buffer[i].size == `GB && !foundEntry) begin
-                        foundEntry = 1;
+                // KB entry lookup
+                end else if (
+                    (buffer[i].virtualAddr == KBAddr) &&
+                    (buffer[i].size == `KB) &&
+                    buffer[i].isValid
+                ) begin
+                    foundEntry = 1;
 
-                        if (cpu_request.isPrivaliged != buffer[i].isPrivaliged)
-                            cpu_exception <= PAGE_PRIVALIGED_ACCESS;
+                    if (buffer[i].isPrivaliged && !cpu_request.isPrivaliged)
+                        cpu_exception <= PAGE_PRIVALIGED_ACCESS;
 
-                        else if (cpu_request.isWrite && !buffer[i].canWrite) 
-                            cpu_exception <= PAGE_READ_ONLY;
+                    else if (!buffer[i].canWrite && cpu_request.isWrite)
+                        cpu_exception <= PAGE_READ_ONLY;
+                    
+                    else begin
+                        mem_request <= {
+                            buffer[i].physicalAddr | KBOffset,
+                            cpu_request.data,
+                            cpu_request.isWrite,
+                            1'b0,
+                            1'b1
+                        };
 
-                        else begin
-                            mem_request <= {
-                                buffer[i].physicalAddr | GBOffset,
-                                cpu_request.data,
-                                cpu_request.isWrite,
-                                1'b0,
-                                cpu_request.isValid
-                            };
-
-                            passResult <= 1;
-                        end
-
-                    end else if (MBAddr == buffer[i].virtualAddr && buffer[i].size == `MB && !foundEntry) begin
-                        foundEntry = 1;
-
-                        if (cpu_request.isPrivaliged != buffer[i].isPrivaliged)
-                            cpu_exception <= PAGE_PRIVALIGED_ACCESS;
-
-                        else if (cpu_request.isWrite && !buffer[i].canWrite) 
-                            cpu_exception <= PAGE_READ_ONLY;
-
-                        else begin
-                            mem_request <= {
-                                buffer[i].physicalAddr | MBOffset,
-                                cpu_request.data,
-                                cpu_request.isWrite,
-                                1'b0,
-                                cpu_request.isValid
-                            };
-
-                            passResult <= 1;
-                        end
-
-                    end else if (MBAddr == buffer[i].virtualAddr && buffer[i].size == `KB && !foundEntry) begin
-                        foundEntry = 1;
-
-                        if (cpu_request.isPrivaliged != buffer[i].isPrivaliged)
-                            cpu_exception <= PAGE_PRIVALIGED_ACCESS;
-                            
-                        else if (cpu_request.isWrite && !buffer[i].canWrite) 
-                            cpu_exception <= PAGE_READ_ONLY;
-
-                        else begin
-                            mem_request <= {
-                                buffer[i].physicalAddr | KBOffset,
-                                cpu_request.data,
-                                cpu_request.isWrite,
-                                1'b0,
-                                cpu_request.isValid
-                            };
-
-                            passResult <= 1;
-                        end
+                        passResult <= 1;
                     end
                 end
             end
 
+            // Page Table lookup
             if (!foundEntry) begin
-                passResult <= 0;
-
-                stage <= LOOKUP_PT0;
-
                 mem_request <= {
-                    pageTableAddr | PT0Index,
+                    pageTableAddr | {TB1Entry, 3'b0},
                     64'b0,
                     1'b0,
                     1'b0,
                     1'b1
                 };
-            end
 
-        end else if (!enabled) begin
-            if (pageTableAddr[`PAGE_FLAG_SIZE:0] != 0) begin
-                cpu_exception <= INVALID_ADDRESS;
-                mem_request <= {64'b0, 64'b0, 1'b0, 1'b0, 1'b0};
+                passResult <= 0;
+                stage <= LOOKUP_PT0;
+            end
+        end
+    end
+
+    // Lookup PT0
+    always @(posedge clock) begin
+        if (
+            enabled &&
+            (stage == LOOKUP_PT0) &&
+            (mem_result.isValid)
+        ) begin
+            if (mem_result.data & `PAGE_FLAG_PRESENT) begin
+                if (mem_result.data & `PAGE_FLAG_SIZE) begin
+                    // GB page
+                    buffer[counter] <= {
+                        GBAddr,
+                        {mem_result.data[63:`KB_SIZE], {(`KB_SIZE){1'b0}}},
+                        2'h`GB,
+                        (mem_result.data & `PAGE_FLAG_PRIVALIGE) ? 1'b1 : 1'b0,
+                        (mem_result.data & `PAGE_FLAG_WRITE) ? 1'b1 : 1'b0,
+                        1'b1
+                    };
+
+                    counter <= counter + 1;
+                    stage <= IDLE;
+
+                end else begin
+                    mem_request <= {
+                        {mem_result.data[63:`KB_SIZE], {(`KB_SIZE){1'b0}}} | {TB0Entry, 3'b0},
+                        64'b0,
+                        1'b0,
+                        1'b0,
+                        1'b1
+                    };
+
+                    stage <= LOOKUP_PT1;
+                end
 
             end else begin
-                cpu_exception <= NONE;
-                mem_request <= {
-                    cpu_request.addr,
-                    cpu_request.data,
-                    cpu_request.isWrite,
-                    1'b0,
-                    cpu_request.isValid
-                };
-            end
+                stage <= IDLE;
+                cpu_exception <= NO_PAGE_MAPPED;
 
-        end else begin
-            cpu_exception <= NONE;
-            stage <= IDLE;
-
-            mem_request <= {64'b0, 64'b0, 1'b0, 1'b0, 1'b0};
-        end
-
-        if (passResult)
-            cpu_result <= mem_result;
-        
-        else
-            cpu_result <= {64'b0, 1'b0};
-    end
-
-    // TODO: Double check these values!
-    logic[`GB_SIZE-1:0] PT0Index = cpu_request.addr[`KB_SIZE+`MB_SIZE+`GB_SIZE+9:`KB_SIZE+`MB_SIZE+9];
-    logic[`MB_SIZE-1:0] PT1Index = cpu_request.addr[`KB_SIZE+`MB_SIZE+9:`KB_SIZE+9];
-    logic[`KB_SIZE-3-1:0] PT2Index = cpu_request.addr[`KB_SIZE+9:`KB_SIZE];
-
-    // TLB lookup PT0 (LOOKUP_PT0)
-
-    always @(posedge clock) begin
-        if (cpu_request.isValid && enabled) begin
-            if (stage == LOOKUP_PT0) begin
-                if (mem_result.isValid) begin
-                    // GB page
-                    if (mem_result.data & `PAGE_FLAG_SIZE) begin
-                        buffer[counter] <= {
-                            mem_result.data[63:`KB_SIZE],
-                            GBAddr,
-                            2'h`GB,
-                            (mem_result.data & `PAGE_FLAG_PRIVALIGE) != 0,
-                            (mem_result.data & `PAGE_FLAG_WRITE) != 0,
-                            1'b1
-                        };
-
-                        counter <= counter + 1;
-
-                        stage <= IDLE;
-
-                    end else begin
-                        mem_request <= {
-                            mem_result.data[63:`KB_SIZE] | PT1Index,
-                            64'b0,
-                            1'b0,
-                            1'b0,
-                            1'b1
-                        };
-
-                        stage <= LOOKUP_PT1;
-                    end
-
-                end else
-                    cpu_exception <= NO_PAGE_MAPPED;
             end
         end
     end
 
-    // TLB lookup PT1 (LOOKUP_PT1)
-
+    // Lookup PT1
     always @(posedge clock) begin
-        if (cpu_request.isValid && enabled) begin
-            if (stage == LOOKUP_PT1) begin
-                if (mem_result.isValid) begin
+        if (
+            enabled &&
+            (stage == LOOKUP_PT1) &&
+            (mem_result.isValid)
+        ) begin
+            if (mem_result.data & `PAGE_FLAG_PRESENT) begin
+                if (mem_result.data & `PAGE_FLAG_SIZE) begin
                     // MB page
-                    if (mem_result.data & `PAGE_FLAG_SIZE) begin
-                        buffer[counter] <= {
-                            mem_result.data[63:`KB_SIZE],
-                            MBAddr,
-                            2'h`MB,
-                            (mem_result.data & `PAGE_FLAG_PRIVALIGE) != 0,
-                            (mem_result.data & `PAGE_FLAG_WRITE) != 0,
-                            1'b1
-                        };
+                    buffer[counter] <= {
+                        MBAddr,
+                        {mem_result.data[63:`KB_SIZE], {(`KB_SIZE){1'b0}}},
+                        2'h`MB,
+                        (mem_result.data & `PAGE_FLAG_PRIVALIGE) != 0,
+                        (mem_result.data & `PAGE_FLAG_WRITE) != 0,
+                        1'b1
+                    };
 
-                        counter <= counter + 1;
+                    counter <= counter + 1;
+                    stage <= IDLE;
 
-                        stage <= IDLE;
+                end else begin
+                    mem_request <= {
+                        {mem_result.data[63:`KB_SIZE], {(`KB_SIZE){1'b0}}} | {TB0Entry, 3'b0},
+                        64'b0,
+                        1'b0,
+                        1'b0,
+                        1'b1
+                    };
 
-                    end else begin
-                        mem_request <= {
-                            mem_result.data[63:`KB_SIZE] | PT2Index,
-                            64'b0,
-                            1'b0,
-                            1'b0,
-                            1'b1
-                        };
+                    stage <= LOOKUP_PT2;
+                end
 
-                        stage <= LOOKUP_PT2;
-                    end
+            end else begin
+                stage <= IDLE;
+                cpu_exception <= NO_PAGE_MAPPED;
 
-                end else
-                    cpu_exception <= NO_PAGE_MAPPED;
             end
         end
     end
 
-    // TLB lookup PT2 (LOOKUP_PT2)
-
+    // Lookup PT2
     always @(posedge clock) begin
-        if (cpu_request.isValid && enabled) begin
-            if (stage == LOOKUP_PT2) begin
-                if (mem_result.isValid) begin
+        if (
+            enabled &&
+            (stage == LOOKUP_PT2) &&
+            (mem_result.isValid)
+        ) begin
+            if (mem_result.data & `PAGE_FLAG_PRESENT) begin
+                if (mem_result.data & `PAGE_FLAG_SIZE) begin
                     // KB page
-                    if (mem_result.data & `PAGE_FLAG_SIZE) begin
-                        buffer[counter] <= {
-                            mem_result.data[63:`KB_SIZE],
-                            GBAddr,
-                            2'h`KB,
-                            (mem_result.data & `PAGE_FLAG_PRIVALIGE) != 0,
-                            (mem_result.data & `PAGE_FLAG_WRITE) != 0,
-                            1'b1
-                        };
+                    buffer[counter] <= {
+                        KBAddr,
+                        {mem_result.data[63:`KB_SIZE], {(`KB_SIZE){1'b0}}},
+                        2'h`KB,
+                        (mem_result.data & `PAGE_FLAG_PRIVALIGE) != 0,
+                        (mem_result.data & `PAGE_FLAG_WRITE) != 0,
+                        1'b1
+                    };
 
-                        counter <= counter + 1;
+                    counter <= counter + 1;
+                    stage <= IDLE;
 
-                        stage <= IDLE;
-
-                    end else begin
-                        mem_request <= {64'b0, 64'b0, 1'b0, 1'b0, 1'b0};
-                        cpu_exception <= INVALID_PAGE_ENTRY;
-
-                        stage <= IDLE;
-                    end
-
-                end else
+                end else begin
+                    stage <= IDLE;
                     cpu_exception <= NO_PAGE_MAPPED;
+                end
+
+            end else begin
+                stage <= IDLE;
+                cpu_exception <= NO_PAGE_MAPPED;
+
             end
         end
+    end
+    
+    ulong_t addr, phys;
+    PageSize psize;
+    logic isPri, canWri, isVal;
+
+    always @* begin
+        addr <= buffer[3].virtualAddr;
+        phys <= buffer[3].physicalAddr;
+        psize <= buffer[3].size;
+        isPri <= buffer[3].isPrivaliged;
+        canWri <= buffer[3].canWrite;
+        isVal <= buffer[3].isValid;
     end
 
 endmodule
