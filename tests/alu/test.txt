@@ -1,6 +1,11 @@
-testbench : testbench.sv
+testbench : compare.sv
 
-required : rtl/alu/alu.sv
-required : rtl/alu/arithmetic.sv
-required : rtl/alu/bitwise.sv
 required : rtl/alu/compare.sv
+
+testbench : arithmetic.sv
+
+required : rtl/alu/arithmetic.sv
+
+testbench : value.sv
+
+required : rtl/alu/value.sv

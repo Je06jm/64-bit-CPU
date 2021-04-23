@@ -1,3 +1,3 @@
-testbench : testbench.sv
+testbench : mmu.sv
 
 required : rtl/mmu/mmu.sv

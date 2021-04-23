@@ -22,22 +22,70 @@ typedef enum logic[15:0] {
     ADD,
     SUB,
     MUL,
-    DIV,
-    MOD,
 
-    SADD,
-    SSUB,
-    SMUL,
+    UDIV,
+    UMOD,
+
     SDIV,
     SMOD,
+
+    INC,
+    DEC,
 
     FADD,
     FSUB,
     FMUL,
     FDIV,
     FMOD,
-    FSQRT,
     FFMA,
+
+    FEPOW, // e ^ x
+    F2POW, // 2 ^ x
+    F10POW, // 10 ^ x
+    FEPOW1, // e ^ x - 1
+    F2POW1, // 2 ^ x - 1
+    F10POW1, // 10 ^ x - 1
+
+    FLN, // ln(x)
+    F2LOG, // log2(x)
+    F10LOG, // log10(x)
+    FLN1, // ln(x + 1)
+    F2LOG1, // log2(x + 1)
+    F10LOG1, // log10(x + 1)
+
+    FDISTANCE, // sqrt(x ^ 2 + y ^ 2)
+
+    FSQRT,
+
+    FPOW1, // (1 + x) ^ y
+    FFPOW, // x ^ (1 / y)
+    FPOW, // x ^ y
+    
+    FSIN,
+    FCOS,
+    FTAN,
+
+    FASIN, // arcsin(x)
+    FACOS, // arccos(x)
+    FATAN, // arctan(x)
+    FATAN2, // atan2(x, y)
+
+    FSINPI, // sin(PI * x)
+    FCOSPI, // cos(PI * x)
+    FTANPI, // tan(PI * x)
+
+    FASINPI, // arcsin(x) / PI
+    FACOSPI, // arccos(x) / PI
+    FATANPI, // arctan(x) / PI
+    FATAN2PI, // atan2(x, y) / PI
+
+    FSINH, // sinh(x)
+    FCOSH, // cosh(x)
+    FTANH, // tanh(x)
+
+    FARSINH, // arsinh(x)
+    FARCOSH, // arcosh(x)
+    FARTANH, // artanh(x)
 
     FABS,
     FNEG,
@@ -47,8 +95,6 @@ typedef enum logic[15:0] {
     TOINT,
     TOFLOAT,
 
-    INC,
-    DEC,
     AND,
     OR,
     XOR,
@@ -57,8 +103,9 @@ typedef enum logic[15:0] {
     ROLL,
     SHIFTR,
     SHIFTL,
-    SWAP,
     FLIP,
+
+    SWAP,
     MOVE,
 
     CMP,
@@ -69,7 +116,7 @@ typedef enum logic[15:0] {
 
     LOAD,
     STORE,
-    CAFI,
+    STOREIF, // Only stores if value matches
 
     PUSH,
     POP,
@@ -113,15 +160,11 @@ typedef logic[7:0] flags_t;
 `define ROUND_TO_INF (1<<5)
 `define ROUND_TO_NEG_INF (1<<6)
 
-`define SET_UNUSED_TO_ZERO (1<<4)
-`define SIGN_EXTEND_UNUSED (1<<5)
-
 `define USE_CARRY_BIT (1<<2)
 
 `define IS_RELATIVE (1<<4)
 
-`define IS_ATOMIC (1<<2)
-`define IS_VALUE_EQU (1<<3)
+`define IS_ATOMIC (1<<4)
 
 `define BIT_SET (1<<2)
 `define BIT_CLEAR (1<<3)
@@ -131,6 +174,10 @@ typedef logic[7:0] flags_t;
 `define SELECT_N_FLAG (1<<3)
 `define SELECT_Z_FLAG (1<<4)
 
+`define ARG0_SIGN_EXTEND (1<<4)
+`define ARG1_SIGN_EXTEND (1<<5)
+`define ARG2_SIGN_EXTEND (1<<6)
+`define ARG3_SIGN_EXTEND (1<<7)
 
 `define BRANCH_SIGNED (1<<0)
 `define BRANCH_C (1<<1)

@@ -1,25 +1,60 @@
 from subprocess import run, DEVNULL
+from sys import argv
+
+runTests = []
+
+for i in range(1, len(argv)):
+    runTests += [argv[i].upper()]
 
 file = open("tests/list.txt", "r")
 tests = file.readlines()
 file.close()
 
+checkTests = []
+
+for i in range(len(tests)):
+    tests[i] = tests[i].strip()
+    checkTests += [tests[i].upper()]
+
+printCmd = False
+
+i = 0
+while i < len(runTests):
+    check = runTests[i]
+
+    if check == "-V":
+        del runTests[i]
+        printCmd = True
+        continue
+
+    if check == "ALL":
+        runTests = []
+        break
+
+    if not check in checkTests:
+        print("Unknown test: " + check)
+        quit(1)
+    
+    i += 1
+
 def doCommand(cmd):
-    #for item in cmd:
-    #    print(item, end=" ")
-    #print()
+    if printCmd:
+        for item in cmd:
+            print(item, end=" ")
+        print()
 
     run(cmd, stdout=DEVNULL)
 
 failed = []
 passed = 0
 for test in tests:
-    test = test.strip()
-
     if test.startswith("#"):
         continue
 
     if len(test) == 0:
+        continue
+
+    if (len(runTests) != 0) and not (test.upper() in runTests):
         continue
 
     commands = []

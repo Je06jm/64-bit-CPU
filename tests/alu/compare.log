@@ -1,0 +1,11 @@
+VCD info: dumpfile tests/alu/compare.vcd opened for output.
+VCD warning: $dumpvars: Package ($unit) is not dumpable with VCD.
+VCD warning: $dumpvars: Package (instructions) is not dumpable with VCD.
+VCD warning: $dumpvars: Package (types) is not dumpable with VCD.
+Passed (tests/alu/compare.sv, 29 [1]): 3 does not equals 1
+Passed (tests/alu/compare.sv, 30 [1]): 3 is not less then 1
+Passed (tests/alu/compare.sv, 35 [2]): 2 equals 2
+Passed (tests/alu/compare.sv, 36 [2]): 2 is not less then 2
+Passed (tests/alu/compare.sv, 41 [3]): 4 does not equals 5
+Passed (tests/alu/compare.sv, 42 [3]): 4 is less then 5
+tests/alu/compare.sv:44: $finish called at 3 (1s)
