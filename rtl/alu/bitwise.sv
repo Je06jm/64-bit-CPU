@@ -17,14 +17,25 @@ module RollRight(
     output logic carry
 );
 
-    ubyte_t rol8 = b % 8;
-    ubyte_t rol8c = b % 9;
-    ubyte_t rol16 = b % 16;
-    ubyte_t rol16c = b % 17;
-    ubyte_t rol32 = b % 32;
-    ubyte_t rol32c = b % 33;
-    ubyte_t rol64 = b % 64;
-    ubyte_t rol64c = b % 65;
+    ubyte_t rol8;
+    ubyte_t rol8c;
+    ubyte_t rol16;
+    ubyte_t rol16c;
+    ubyte_t rol32;
+    ubyte_t rol32c;
+    ubyte_t rol64;
+    ubyte_t rol64c;
+ 
+    always @* begin
+        rol8 <= b % 8;
+        rol8c <= b % 9;
+        rol16 <= b % 16;
+        rol16c <= b % 17;
+        rol32 <= b % 32;
+        rol32c <= b % 33;
+        rol64 <= b % 64;
+        rol64c <= b % 65;
+    end
 
     always @* begin
         if (storeLSB && !useCarry)
@@ -32,13 +43,17 @@ module RollRight(
 
         case (size)
             BITS_8: begin
-                if (useCarry)
-                    {carry, result} <=
+                if (useCarry) begin
+                    result[63:8] <= 0;
+
+                    {carry, result[7:0]} <=
                         {carryIn, a[7:0]} >> rol8c |
                         {carryIn, a[7:0]} << (9 - rol8c);
                     
-                else begin
-                    result <=
+                end else begin
+                    result[63:8] <= 0;
+
+                    result[7:0] <=
                         a[7:0] >> rol8 |
                         a[7:0] << (8 - rol8);
 
@@ -48,13 +63,17 @@ module RollRight(
                 end
             end
             BITS_16: begin
-                if (useCarry)
-                    {carry, result} <=
+                if (useCarry) begin
+                    result[63:16] <= 0;
+
+                    {carry, result[15:0]} <=
                         {carryIn, a[15:0]} >> rol16c |
                         {carryIn, a[15:0]} << (17 - rol16c);
                 
-                else begin
-                    result <=
+                end else begin
+                    result[63:16] <= 0;
+
+                    result[15:0] <=
                         a[15:0] >> rol16 |
                         a[15:0] << (16 - rol16);
                     
@@ -64,13 +83,17 @@ module RollRight(
                 end
             end
             BITS_32: begin
-                if (useCarry)
-                    {carry, result} <=
+                if (useCarry) begin
+                    result[63:32] <= 0;
+
+                    {carry, result[31:0]} <=
                         {carryIn, a[31:0]} >> rol32c |
                         {carryIn, a[31:0]} << (33 - rol32c);
                 
-                else begin
-                    result <=
+                end else begin
+                    result[63:32] <= 0;
+
+                    result[31:0] <=
                         a[31:0] >> rol32 |
                         a[31:0] << (32 - rol32c);
 
@@ -101,13 +124,6 @@ module RollRight(
 
 endmodule
 
-// 1000 -> 0100 ROLL RIGHT 1
-// 1000 -> 0100 ROLL LEFT 3
-
-// (1) 1000 -> (0) 1100 ROLLC RIGHT 1
-// (1) 1000 -> (0) 1100 ROLLC LEFT 4
-
-
 module Bitwise(
     input opcode_t op,
 
@@ -118,17 +134,28 @@ module Bitwise(
     input ulong_t a, b,
     output ulong_t result,
 
-    output logic zero, carry, negitive
+    output logic carry
 );
 
-    ubyte_t rol8 = 8 - b;
-    ubyte_t rol8c = 9 - b;
-    ubyte_t rol16 = 16 - b;
-    ubyte_t rol16c = 17 - b;
-    ubyte_t rol32 = 32 - b;
-    ubyte_t rol32c = 33 - b;
-    ubyte_t rol64 = 64 - b;
-    ubyte_t rol64c = 65 - b;
+    ubyte_t rol8;
+    ubyte_t rol8c;
+    ubyte_t rol16;
+    ubyte_t rol16c;
+    ubyte_t rol32;
+    ubyte_t rol32c;
+    ubyte_t rol64;
+    ubyte_t rol64c;
+
+    always @* begin
+        rol8 <= 8 - b;
+        rol8c <= 9 - b;
+        rol16 <= 16 - b;
+        rol16c <= 17 - b;
+        rol32 <= 32 - b;
+        rol32c <= 33 - b;
+        rol64 <= 64 - b;
+        rol64c <= 65 - b;
+    end
 
     logic storeLSB;
     ulong_t rollrResult;
@@ -188,16 +215,84 @@ module Bitwise(
                 {carry, result} <= {rollrCarry, rollrResult};
             end
             SHIFTR: begin
-                if (useCarry)
-                    {carry, result} <= {carryIn, a} >> b;
-                else
-                    {carry, result} <= a >> b;
+                case (size)
+                    BITS_8: begin
+                        result[63:8] <= 0;
+
+                        if (useCarry)
+                            {carry, result[7:0]} <= {carryIn, a[7:0]} >> b;
+                        else
+                            {carry, result[7:0]} <= a >> b;
+                    end
+                    BITS_16: begin
+                        result[63:16] <= 0;
+
+                        if (useCarry)
+                            {carry, result[15:0]} <= {carryIn, a[15:0]} >> b;
+                        else
+                            {carry, result[15:0]} <= a >> b;
+                    end
+                    BITS_32: begin
+                        result[63:32] <= 0;
+
+                        if (useCarry)
+                            {carry, result[31:0]} <= {carryIn, a[31:0]} >> b;
+                        else
+                            {carry, result[31:0]} <= a >> b;
+                    end
+                    BITS_64: begin
+                        if (useCarry)
+                            {carry, result} <= {carryIn, a} >> b;
+                        else
+                            {carry, result} <= a >> b;
+                    end
+                endcase
             end
             SHIFTL: begin
-                if (useCarry)
-                    {carry, result} <= {carryIn, a} << b;
-                else
-                    {carry, result} <= a << b;
+                case (size)
+                    BITS_8: begin
+                        result[63:8] <= 0;
+
+                        if (useCarry) begin
+                            if (b == 0)
+                                {carry, result[7:0]} <= {1'b0, a[7:0]};
+                            else
+                                {carry, result[7:0]} <= {a, carryIn} << (b - 1);
+                        end else
+                            {carry, result[7:0]} <= a << b;
+                    end
+                    BITS_16: begin
+                        result[63:16] <= 0;
+
+                        if (useCarry) begin
+                            if (b == 0)
+                                {carry, result[15:0]} <= {1'b0, a[15:0]};
+                            else
+                                {carry, result[15:0]} <= {a, carryIn} << (b - 1);
+                        end else
+                            {carry, result[15:0]} <= a << b;
+                    end
+                    BITS_32: begin
+                        result[63:32] <= 0;
+
+                        if (useCarry) begin
+                            if (b == 0)
+                                {carry, result[31:0]} <= {1'b0, a[31:0]};
+                            else
+                                {carry, result[31:0]} <= {a, carryIn} << (b - 1);
+                        end else
+                            {carry, result[31:0]} <= a << b;
+                    end
+                    BITS_64: begin
+                        if (useCarry) begin
+                            if (b == 0)
+                                {carry, result} <= {1'b0, a};
+                            else
+                                {carry, result} <= {a, carryIn} << (b - 1);
+                        end else
+                            {carry, result} <= a << b;
+                    end
+                endcase
             end
             FLIP: begin
                 case (size)

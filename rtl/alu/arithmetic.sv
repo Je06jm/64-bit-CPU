@@ -14,7 +14,7 @@ module Arithmetic(
 
     output logic divByZero,
 
-    output logic zero, carry, negitive
+    output logic carry
 );
 
     long_t sa, sb;
@@ -22,9 +22,6 @@ module Arithmetic(
     always @* begin
         sa <= a;
         sb <= b;
-
-        zero <= result == 0;
-        negitive <= result[63];
 
         divByZero <=
             ((op == SDIV) || (op == UDIV) || (op == SMOD) || (op == UMOD)) &&

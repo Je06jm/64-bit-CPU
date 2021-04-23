@@ -9,3 +9,7 @@ required : rtl/alu/arithmetic.sv
 testbench : value.sv
 
 required : rtl/alu/value.sv
+
+testbench : bitwise.sv
+
+required : rtl/alu/bitwise.sv
