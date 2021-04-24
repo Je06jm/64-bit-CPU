@@ -109,6 +109,7 @@ typedef enum logic[15:0] {
     MOVE,
 
     CMP,
+    FCMP,
 
     JMP,
     BRA,

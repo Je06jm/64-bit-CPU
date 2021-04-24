@@ -433,7 +433,8 @@ module Bitwise(
                     };
                 endcase
             end
-
+            default:
+                {carry, result} = 0;
         endcase
     end
 
